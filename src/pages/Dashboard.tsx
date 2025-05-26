@@ -12,30 +12,42 @@ const Dashboard = () => {
         <StatsCard
           title="Agendamentos Hoje"
           value="6"
-          icon={Calendar}
-          trend="+12%"
-          trendDirection="up"
+          icon={<Calendar className="w-6 h-6 text-white" />}
+          color="bg-blue-500"
+          trend={{
+            value: "+12%",
+            isPositive: true
+          }}
         />
         <StatsCard
           title="Receita Hoje"
           value="R$ 670"
-          icon={DollarSign}
-          trend="+8%"
-          trendDirection="up"
+          icon={<DollarSign className="w-6 h-6 text-white" />}
+          color="bg-green-500"
+          trend={{
+            value: "+8%",
+            isPositive: true
+          }}
         />
         <StatsCard
           title="Clientes Ativos"
           value="142"
-          icon={Users}
-          trend="+23%"
-          trendDirection="up"
+          icon={<Users className="w-6 h-6 text-white" />}
+          color="bg-purple-500"
+          trend={{
+            value: "+23%",
+            isPositive: true
+          }}
         />
         <StatsCard
           title="Taxa de Crescimento"
           value="15.3%"
-          icon={TrendingUp}
-          trend="+5%"
-          trendDirection="up"
+          icon={<TrendingUp className="w-6 h-6 text-white" />}
+          color="bg-orange-500"
+          trend={{
+            value: "+5%",
+            isPositive: true
+          }}
         />
       </div>
 

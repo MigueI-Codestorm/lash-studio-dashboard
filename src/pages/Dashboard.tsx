@@ -1,27 +1,19 @@
 
 import { useState, useEffect } from 'react';
-import { Calendar, Users, Package, DollarSign } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { Card } from '@/components/ui/card';
+import { Calendar, Users, DollarSign, Clock, TrendingUp, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import StatsCard from '../components/StatsCard';
-import Card from '../components/Card';
-import ClientRaffle from '../components/ClientRaffle';
+import AppointmentModal from '@/components/AppointmentModal';
+import ClientRaffle from '@/components/ClientRaffle';
+import StatsCard from '@/components/StatsCard';
 
 interface DashboardStats {
   appointments_today: number;
   revenue_today: number;
   total_clients: number;
   services_completed: number;
-}
-
-interface Appointment {
-  id: string;
-  data: string;
-  hora: string;
-  valor: number;
-  client: { nome: string };
-  service: { nome: string };
 }
 
 const Dashboard = () => {
@@ -31,79 +23,45 @@ const Dashboard = () => {
     total_clients: 0,
     services_completed: 0
   });
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [todayAppointments, setTodayAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [studioName, setStudioName] = useState('Studio Camila Lash');
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
-    fetchStudioName();
   }, []);
-
-  const fetchStudioName = async () => {
-    try {
-      const { data, error } = await supabase.rpc('get_studio_name');
-      
-      if (error) {
-        console.error('Error fetching studio name:', error);
-        return;
-      }
-      
-      if (data) {
-        setStudioName(data);
-      }
-    } catch (error) {
-      console.error('Error fetching studio name:', error);
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
-      // Buscar estatísticas do dashboard
+      setLoading(true);
+
+      // Fetch dashboard stats using the database function
       const { data: statsData, error: statsError } = await supabase.rpc('get_dashboard_stats');
       
       if (statsError) {
-        console.error('Error fetching dashboard stats:', statsError);
-        throw statsError;
-      }
-      
-      if (statsData && statsData.length > 0) {
+        console.error('Stats error:', statsError);
+      } else if (statsData && statsData.length > 0) {
         setStats(statsData[0]);
       }
 
-      // Buscar próximos agendamentos
+      // Fetch today's appointments
       const today = new Date().toISOString().split('T')[0];
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
-          id,
-          data,
-          hora,
-          valor,
-          clients!inner(nome),
-          services!inner(nome)
+          *,
+          client:clients(nome, telefone),
+          service:services(nome, duracao_min)
         `)
-        .gte('data', today)
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true })
-        .limit(5);
+        .eq('data', today)
+        .order('hora');
 
       if (appointmentsError) {
-        console.error('Error fetching appointments:', appointmentsError);
-        throw appointmentsError;
+        console.error('Appointments error:', appointmentsError);
+      } else {
+        setTodayAppointments(appointmentsData || []);
       }
-      
-      // Transformar os dados para o formato esperado
-      const formattedAppointments = appointmentsData?.map(apt => ({
-        id: apt.id,
-        data: apt.data,
-        hora: apt.hora,
-        valor: apt.valor,
-        client: { nome: apt.clients.nome },
-        service: { nome: apt.services.nome }
-      })) || [];
-      
-      setAppointments(formattedAppointments);
+
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Erro ao carregar dados do dashboard');
@@ -112,17 +70,6 @@ const Dashboard = () => {
     }
   };
 
-  // Dados mockados para o gráfico da semana
-  const weeklyData = [
-    { dia: 'Seg', agendamentos: 12 },
-    { dia: 'Ter', agendamentos: 19 },
-    { dia: 'Qua', agendamentos: 15 },
-    { dia: 'Qui', agendamentos: 22 },
-    { dia: 'Sex', agendamentos: 28 },
-    { dia: 'Sáb', agendamentos: 35 },
-    { dia: 'Dom', agendamentos: 8 }
-  ];
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -130,9 +77,13 @@ const Dashboard = () => {
     }).format(value);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00-03:00');
-    return date.toLocaleDateString('pt-BR');
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Confirmado': return 'bg-green-900 text-green-300';
+      case 'Concluído': return 'bg-blue-900 text-blue-300';
+      case 'Cancelado': return 'bg-red-900 text-red-300';
+      default: return 'bg-yellow-900 text-yellow-300';
+    }
   };
 
   if (loading) {
@@ -145,11 +96,21 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard - {studioName}</h1>
-        <p className="text-dark-400">Visão geral do seu negócio</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+          <p className="text-dark-400">Visão geral do seu estúdio</p>
+        </div>
+        <Button
+          onClick={() => setIsAppointmentModalOpen(true)}
+          className="bg-primary-600 hover:bg-primary-700"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Agendamento
+        </Button>
       </div>
 
+      {/* Cards de estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Agendamentos Hoje"
@@ -164,7 +125,7 @@ const Dashboard = () => {
           value={formatCurrency(stats.revenue_today)}
           icon={<DollarSign className="w-6 h-6 text-white" />}
           color="bg-emerald-600"
-          trend={{ value: "Concluídos", isPositive: true }}
+          trend={{ value: "Hoje", isPositive: true }}
         />
         
         <StatsCard
@@ -176,86 +137,71 @@ const Dashboard = () => {
         />
         
         <StatsCard
-          title="Serviços Este Mês"
+          title="Serviços do Mês"
           value={stats.services_completed.toString()}
-          icon={<Package className="w-6 h-6 text-white" />}
+          icon={<TrendingUp className="w-6 h-6 text-white" />}
           color="bg-orange-600"
           trend={{ value: "Concluídos", isPositive: true }}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Agendamentos de hoje */}
         <div className="lg:col-span-2">
-          <Card>
-            <h3 className="text-xl font-semibold text-white mb-6">Agendamentos da Semana</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="dia" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Bar dataKey="agendamentos" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <Card className="bg-dark-800 border-dark-700">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-white mb-6">Agendamentos de Hoje</h3>
+              
+              {todayAppointments.length === 0 ? (
+                <div className="text-center text-dark-400 py-8">
+                  <Clock className="w-12 h-12 mx-auto mb-4 text-dark-500" />
+                  <p>Nenhum agendamento para hoje</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {todayAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between p-4 bg-dark-700 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-primary-900 p-2 rounded-lg">
+                          <Clock className="w-5 h-5 text-primary-300" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-white">{appointment.hora}</p>
+                          <p className="text-sm text-dark-300">
+                            {appointment.client?.nome} • {appointment.service?.nome}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusColor(appointment.status)}`}>
+                          {appointment.status}
+                        </span>
+                        <p className="text-sm text-dark-300 mt-1">
+                          R$ {appointment.valor}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         </div>
 
-        <div>
+        {/* Cliente sorteado */}
+        <div className="lg:col-span-1">
           <ClientRaffle />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <h3 className="text-xl font-semibold text-white mb-6">Próximos Agendamentos</h3>
-          <div className="space-y-4">
-            {appointments.length === 0 ? (
-              <div className="text-center text-dark-400 py-8">
-                <Calendar className="w-12 h-12 mx-auto mb-4 text-dark-500" />
-                <p>Nenhum agendamento próximo</p>
-              </div>
-            ) : (
-              appointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 bg-dark-700 rounded-lg">
-                  <div>
-                    <p className="font-medium text-white">{appointment.client?.nome}</p>
-                    <p className="text-sm text-dark-400">{appointment.service?.nome}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-primary-400">
-                      {formatDate(appointment.data)}
-                    </p>
-                    <p className="text-sm text-dark-400">{appointment.hora}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <h3 className="text-lg font-semibold text-white mb-4">Receita Mensal</h3>
-            <div className="text-center">
-              <p className="text-3xl font-bold text-emerald-400">{formatCurrency(stats.revenue_today * 30)}</p>
-              <p className="text-dark-400 text-sm mt-2">Estimativa baseada em hoje</p>
-              <div className="w-full bg-dark-700 rounded-full h-2 mt-4">
-                <div className="bg-emerald-400 h-2 rounded-full" style={{ width: '65%' }}></div>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <h3 className="text-lg font-semibold text-white mb-4">Serviço Mais Popular</h3>
-            <div className="text-center">
-              <p className="text-xl font-bold text-purple-400">Extensão de Cílios</p>
-              <p className="text-dark-400 text-sm mt-2">{stats.services_completed} realizados</p>
-              <p className="text-emerald-400 text-sm mt-1">Este mês</p>
-            </div>
-          </Card>
-        </div>
-      </div>
+      <AppointmentModal
+        isOpen={isAppointmentModalOpen}
+        onClose={() => setIsAppointmentModalOpen(false)}
+        onAppointmentSaved={fetchDashboardData}
+      />
     </div>
   );
 };

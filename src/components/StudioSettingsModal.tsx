@@ -1,60 +1,89 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import Modal from './Modal';
 
 interface StudioSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSettingsUpdated: () => void;
 }
 
-const StudioSettingsModal = ({ isOpen, onClose }: StudioSettingsModalProps) => {
-  const [loading, setLoading] = useState(false);
+interface BusinessHours {
+  segunda: { ativo: boolean; abertura: string; fechamento: string };
+  terca: { ativo: boolean; abertura: string; fechamento: string };
+  quarta: { ativo: boolean; abertura: string; fechamento: string };
+  quinta: { ativo: boolean; abertura: string; fechamento: string };
+  sexta: { ativo: boolean; abertura: string; fechamento: string };
+  sabado: { ativo: boolean; abertura: string; fechamento: string };
+  domingo: { ativo: boolean; abertura: string; fechamento: string };
+}
+
+const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSettingsModalProps) => {
   const [formData, setFormData] = useState({
     nome: '',
-    endereco: '',
     telefone: '',
     whatsapp: '',
     instagram: '',
     facebook: '',
+    endereco: '',
     link_agendamento: ''
   });
+  
+  const [businessHours, setBusinessHours] = useState<BusinessHours>({
+    segunda: { ativo: true, abertura: '09:00', fechamento: '18:00' },
+    terca: { ativo: true, abertura: '09:00', fechamento: '18:00' },
+    quarta: { ativo: true, abertura: '09:00', fechamento: '18:00' },
+    quinta: { ativo: true, abertura: '09:00', fechamento: '18:00' },
+    sexta: { ativo: true, abertura: '09:00', fechamento: '18:00' },
+    sabado: { ativo: false, abertura: '09:00', fechamento: '18:00' },
+    domingo: { ativo: false, abertura: '09:00', fechamento: '18:00' }
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [existingSettingsId, setExistingSettingsId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      fetchSettings();
+      fetchStudioSettings();
     }
   }, [isOpen]);
 
-  const fetchSettings = async () => {
+  const fetchStudioSettings = async () => {
     try {
       const { data, error } = await supabase
         .from('studio_settings')
-        .select('nome, endereco, telefone, whatsapp, instagram, facebook, link_agendamento')
-        .limit(1)
-        .single();
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data) {
+      if (data && data.length > 0) {
+        const settings = data[0];
+        setExistingSettingsId(settings.id);
+        
         setFormData({
-          nome: data.nome || '',
-          endereco: data.endereco || '',
-          telefone: data.telefone || '',
-          whatsapp: data.whatsapp || '',
-          instagram: data.instagram || '',
-          facebook: data.facebook || '',
-          link_agendamento: data.link_agendamento || ''
+          nome: settings.nome || '',
+          telefone: settings.telefone || '',
+          whatsapp: settings.whatsapp || '',
+          instagram: settings.instagram || '',
+          facebook: settings.facebook || '',
+          endereco: settings.endereco || '',
+          link_agendamento: settings.link_agendamento || ''
         });
+
+        if (settings.horas_funcionamento) {
+          setBusinessHours(settings.horas_funcionamento);
+        }
       }
     } catch (error: any) {
-      console.error('Error fetching settings:', error);
+      console.error('Error fetching studio settings:', error);
       toast.error('Erro ao carregar configurações');
     }
   };
@@ -64,138 +93,205 @@ const StudioSettingsModal = ({ isOpen, onClose }: StudioSettingsModalProps) => {
     setLoading(true);
 
     try {
-      const { data: existingSettings } = await supabase
-        .from('studio_settings')
-        .select('id')
-        .limit(1)
-        .single();
+      const settingsData = {
+        nome: formData.nome,
+        telefone: formData.telefone || null,
+        whatsapp: formData.whatsapp || null,
+        instagram: formData.instagram || null,
+        facebook: formData.facebook || null,
+        endereco: formData.endereco || null,
+        link_agendamento: formData.link_agendamento || null,
+        horas_funcionamento: businessHours
+      };
 
-      if (existingSettings) {
+      if (existingSettingsId) {
         const { error } = await supabase
           .from('studio_settings')
-          .update({
-            nome: formData.nome,
-            endereco: formData.endereco,
-            telefone: formData.telefone,
-            whatsapp: formData.whatsapp,
-            instagram: formData.instagram,
-            facebook: formData.facebook,
-            link_agendamento: formData.link_agendamento,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSettings.id);
+          .update(settingsData)
+          .eq('id', existingSettingsId);
 
         if (error) throw error;
+        toast.success('Configurações atualizadas com sucesso!');
       } else {
         const { error } = await supabase
           .from('studio_settings')
-          .insert([formData]);
+          .insert(settingsData);
 
         if (error) throw error;
+        toast.success('Configurações criadas com sucesso!');
       }
 
-      toast.success('Configurações salvas com sucesso!');
+      onSettingsUpdated();
       onClose();
     } catch (error: any) {
-      console.error('Error saving settings:', error);
-      toast.error('Erro ao salvar configurações: ' + error.message);
+      console.error('Error saving studio settings:', error);
+      toast.error(error.message || 'Erro ao salvar configurações');
     } finally {
       setLoading(false);
     }
   };
 
+  const updateBusinessHours = (day: keyof BusinessHours, field: string, value: string | boolean) => {
+    setBusinessHours(prev => ({
+      ...prev,
+      [day]: {
+        ...prev[day],
+        [field]: value
+      }
+    }));
+  };
+
+  const dayLabels = {
+    segunda: 'Segunda-feira',
+    terca: 'Terça-feira',
+    quarta: 'Quarta-feira',
+    quinta: 'Quinta-feira',
+    sexta: 'Sexta-feira',
+    sabado: 'Sábado',
+    domingo: 'Domingo'
+  };
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Configurações do Studio"
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="nome">Nome do Studio *</Label>
-          <Input
-            id="nome"
-            value={formData.nome}
-            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-            required
-            className="bg-dark-700 border-dark-600 text-white"
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="endereco">Endereço</Label>
-          <Input
-            id="endereco"
-            value={formData.endereco}
-            onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-            className="bg-dark-700 border-dark-600 text-white"
-          />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="telefone">Telefone</Label>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-dark-800 border-dark-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Configurações do Estúdio</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome do Estúdio</Label>
+              <Input
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="Studio Camila Lash"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="telefone">Telefone</Label>
+              <Input
+                id="telefone"
+                value={formData.telefone}
+                onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp</Label>
+              <Input
+                id="whatsapp"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                value={formData.instagram}
+                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="@studiocamilalash"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="facebook">Facebook</Label>
+              <Input
+                id="facebook"
+                value={formData.facebook}
+                onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="Studio Camila Lash"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="link_agendamento">Link de Agendamento</Label>
+              <Input
+                id="link_agendamento"
+                value={formData.link_agendamento}
+                onChange={(e) => setFormData({ ...formData, link_agendamento: e.target.value })}
+                className="bg-dark-700 border-dark-600"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endereco">Endereço</Label>
             <Input
-              id="telefone"
-              value={formData.telefone}
-              onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-              className="bg-dark-700 border-dark-600 text-white"
+              id="endereco"
+              value={formData.endereco}
+              onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
+              className="bg-dark-700 border-dark-600"
+              placeholder="Rua, número, bairro, cidade"
             />
           </div>
-          
-          <div>
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
-              id="whatsapp"
-              value={formData.whatsapp}
-              onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-              className="bg-dark-700 border-dark-600 text-white"
-            />
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Horários de Funcionamento</h3>
+            {Object.entries(dayLabels).map(([key, label]) => (
+              <div key={key} className="flex items-center gap-4 p-3 bg-dark-700 rounded-lg">
+                <div className="flex items-center space-x-2 min-w-[120px]">
+                  <Switch
+                    checked={businessHours[key as keyof BusinessHours].ativo}
+                    onCheckedChange={(checked) => updateBusinessHours(key as keyof BusinessHours, 'ativo', checked)}
+                  />
+                  <span className="text-sm">{label}</span>
+                </div>
+                
+                {businessHours[key as keyof BusinessHours].ativo && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="time"
+                      value={businessHours[key as keyof BusinessHours].abertura}
+                      onChange={(e) => updateBusinessHours(key as keyof BusinessHours, 'abertura', e.target.value)}
+                      className="bg-dark-600 border-dark-500 w-24"
+                    />
+                    <span className="text-dark-400">às</span>
+                    <Input
+                      type="time"
+                      value={businessHours[key as keyof BusinessHours].fechamento}
+                      onChange={(e) => updateBusinessHours(key as keyof BusinessHours, 'fechamento', e.target.value)}
+                      className="bg-dark-600 border-dark-500 w-24"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="instagram">Instagram</Label>
-            <Input
-              id="instagram"
-              value={formData.instagram}
-              onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-              className="bg-dark-700 border-dark-600 text-white"
-            />
+
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 border-dark-600 text-dark-300 hover:bg-dark-700"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex-1"
+            >
+              {loading ? 'Salvando...' : 'Salvar Configurações'}
+            </Button>
           </div>
-          
-          <div>
-            <Label htmlFor="facebook">Facebook</Label>
-            <Input
-              id="facebook"
-              value={formData.facebook}
-              onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
-              className="bg-dark-700 border-dark-600 text-white"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <Label htmlFor="link_agendamento">Link de Agendamento</Label>
-          <Input
-            id="link_agendamento"
-            value={formData.link_agendamento}
-            onChange={(e) => setFormData({ ...formData, link_agendamento: e.target.value })}
-            className="bg-dark-700 border-dark-600 text-white"
-          />
-        </div>
-        
-        <div className="flex gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose} className="flex-1">
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading} className="flex-1">
-            {loading ? 'Salvando...' : 'Salvar Configurações'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

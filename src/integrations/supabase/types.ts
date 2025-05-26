@@ -114,6 +114,51 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          appointment_id: string | null
+          client_id: string | null
+          enviado_em: string | null
+          id: string
+          mensagem: string
+          status: string | null
+          tipo: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem: string
+          status?: string | null
+          tipo: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem?: string
+          status?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -229,6 +274,7 @@ export type Database = {
       }
       studio_settings: {
         Row: {
+          cor_primaria: string | null
           created_at: string | null
           endereco: string | null
           facebook: string | null
@@ -236,12 +282,14 @@ export type Database = {
           id: string
           instagram: string | null
           link_agendamento: string | null
+          logo_url: string | null
           nome: string
           telefone: string | null
           updated_at: string | null
           whatsapp: string | null
         }
         Insert: {
+          cor_primaria?: string | null
           created_at?: string | null
           endereco?: string | null
           facebook?: string | null
@@ -249,12 +297,14 @@ export type Database = {
           id?: string
           instagram?: string | null
           link_agendamento?: string | null
+          logo_url?: string | null
           nome: string
           telefone?: string | null
           updated_at?: string | null
           whatsapp?: string | null
         }
         Update: {
+          cor_primaria?: string | null
           created_at?: string | null
           endereco?: string | null
           facebook?: string | null
@@ -262,6 +312,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           link_agendamento?: string | null
+          logo_url?: string | null
           nome?: string
           telefone?: string | null
           updated_at?: string | null
@@ -369,6 +420,17 @@ export type Database = {
           revenue_today: number
           total_clients: number
           services_completed: number
+        }[]
+      }
+      get_next_appointment: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          appointment_id: string
+          client_name: string
+          client_phone: string
+          appointment_date: string
+          appointment_time: string
+          service_name: string
         }[]
       }
       get_random_client: {

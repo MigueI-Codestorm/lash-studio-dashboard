@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,9 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
     instagram: '',
     facebook: '',
     endereco: '',
-    link_agendamento: ''
+    link_agendamento: '',
+    logo_url: '',
+    cor_primaria: '#1e3a8a'
   });
   
   const [businessHours, setBusinessHours] = useState<BusinessHours>({
@@ -104,7 +107,9 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
           instagram: settings.instagram || '',
           facebook: settings.facebook || '',
           endereco: settings.endereco || '',
-          link_agendamento: settings.link_agendamento || ''
+          link_agendamento: settings.link_agendamento || '',
+          logo_url: settings.logo_url || '',
+          cor_primaria: settings.cor_primaria || '#1e3a8a'
         });
 
         if (settings.horas_funcionamento && isValidBusinessHours(settings.horas_funcionamento)) {
@@ -130,6 +135,8 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
         facebook: formData.facebook || null,
         endereco: formData.endereco || null,
         link_agendamento: formData.link_agendamento || null,
+        logo_url: formData.logo_url || null,
+        cor_primaria: formData.cor_primaria,
         horas_funcionamento: businessHours as any
       };
 
@@ -269,6 +276,41 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
               className="bg-dark-700 border-dark-600"
               placeholder="Rua, número, bairro, cidade"
             />
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Personalização Visual</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="logo_url">URL do Logo</Label>
+                <Input
+                  id="logo_url"
+                  value={formData.logo_url}
+                  onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
+                  className="bg-dark-700 border-dark-600"
+                  placeholder="https://exemplo.com/logo.png"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="cor_primaria">Cor Primária</Label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="color"
+                    id="cor_primaria"
+                    value={formData.cor_primaria}
+                    onChange={(e) => setFormData({ ...formData, cor_primaria: e.target.value })}
+                    className="w-12 h-10 rounded border border-dark-600 bg-dark-700 cursor-pointer"
+                  />
+                  <Input
+                    value={formData.cor_primaria}
+                    onChange={(e) => setFormData({ ...formData, cor_primaria: e.target.value })}
+                    className="bg-dark-700 border-dark-600 flex-1"
+                    placeholder="#1e3a8a"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">

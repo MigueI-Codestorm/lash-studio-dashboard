@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CalendarDays, Clock, Phone, Mail, User } from 'lucide-react';
+import { CalendarDays, Clock, Phone, Mail, User, Instagram, Facebook, MapPin } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -19,8 +19,23 @@ interface Service {
   descricao?: string;
 }
 
+interface StudioInfo {
+  nome: string;
+  telefone?: string;
+  whatsapp?: string;
+  instagram?: string;
+  facebook?: string;
+  endereco?: string;
+  logo_url?: string;
+  cor_primaria?: string;
+}
+
 const PublicBooking = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [studioInfo, setStudioInfo] = useState<StudioInfo>({
+    nome: 'Studio Camila Lash',
+    cor_primaria: '#1e3a8a'
+  });
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,6 +49,7 @@ const PublicBooking = () => {
 
   useEffect(() => {
     fetchServices();
+    fetchStudioInfo();
   }, []);
 
   const fetchServices = async () => {
@@ -49,6 +65,33 @@ const PublicBooking = () => {
     } catch (error: any) {
       console.error('Error fetching services:', error);
       toast.error('Erro ao carregar serviços');
+    }
+  };
+
+  const fetchStudioInfo = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('studio_settings')
+        .select('nome, telefone, whatsapp, instagram, facebook, endereco, logo_url, cor_primaria')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setStudioInfo({
+          nome: data[0].nome || 'Studio Camila Lash',
+          telefone: data[0].telefone,
+          whatsapp: data[0].whatsapp,
+          instagram: data[0].instagram,
+          facebook: data[0].facebook,
+          endereco: data[0].endereco,
+          logo_url: data[0].logo_url,
+          cor_primaria: data[0].cor_primaria || '#1e3a8a'
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching studio info:', error);
     }
   };
 
@@ -115,13 +158,32 @@ const PublicBooking = () => {
   const selectedService = services.find(s => s.id === formData.service_id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900"
+      style={{ 
+        background: `linear-gradient(135deg, ${studioInfo.cor_primaria}20 0%, #1a1a1a 100%)` 
+      }}
+    >
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">Studio Camila Lash</h1>
-            <p className="text-xl text-primary-400 mb-2">Agende seu horário online</p>
+            {studioInfo.logo_url && (
+              <div className="mb-4">
+                <img 
+                  src={studioInfo.logo_url} 
+                  alt={studioInfo.nome}
+                  className="h-20 mx-auto object-contain"
+                />
+              </div>
+            )}
+            <h1 className="text-4xl font-bold text-white mb-4">{studioInfo.nome}</h1>
+            <p 
+              className="text-xl mb-2"
+              style={{ color: studioInfo.cor_primaria }}
+            >
+              Agende seu horário online
+            </p>
             <p className="text-dark-300">Preencha o formulário abaixo e entraremos em contato para confirmação</p>
           </div>
 
@@ -129,7 +191,7 @@ const PublicBooking = () => {
             {/* Formulário */}
             <Card className="p-6 bg-dark-800 border-dark-700">
               <h2 className="text-2xl font-semibold text-white mb-6 flex items-center">
-                <CalendarDays className="w-6 h-6 mr-2 text-primary-400" />
+                <CalendarDays className="w-6 h-6 mr-2" style={{ color: studioInfo.cor_primaria }} />
                 Dados do Agendamento
               </h2>
               
@@ -230,7 +292,11 @@ const PublicBooking = () => {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3"
+                  className="w-full text-white font-semibold py-3"
+                  style={{ 
+                    backgroundColor: studioInfo.cor_primaria,
+                    borderColor: studioInfo.cor_primaria 
+                  }}
                 >
                   {loading ? 'Enviando...' : 'Solicitar Agendamento'}
                 </Button>
@@ -264,7 +330,9 @@ const PublicBooking = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-dark-300">Valor:</span>
-                      <span className="text-primary-400 font-semibold">R$ {selectedService.preco}</span>
+                      <span className="font-semibold" style={{ color: studioInfo.cor_primaria }}>
+                        R$ {selectedService.preco}
+                      </span>
                     </div>
                     {selectedService.descricao && (
                       <div className="pt-3 border-t border-dark-700">
@@ -278,14 +346,30 @@ const PublicBooking = () => {
               <Card className="p-6 bg-dark-800 border-dark-700">
                 <h3 className="text-xl font-semibold text-white mb-4">Contato</h3>
                 <div className="space-y-3">
-                  <div className="flex items-center text-dark-300">
-                    <Phone className="w-4 h-4 mr-3 text-primary-400" />
-                    <span>(11) 99999-9999</span>
-                  </div>
-                  <div className="flex items-center text-dark-300">
-                    <Mail className="w-4 h-4 mr-3 text-primary-400" />
-                    <span>contato@studiocamilalash.com</span>
-                  </div>
+                  {studioInfo.whatsapp && (
+                    <div className="flex items-center text-dark-300">
+                      <Phone className="w-4 h-4 mr-3" style={{ color: studioInfo.cor_primaria }} />
+                      <span>{studioInfo.whatsapp}</span>
+                    </div>
+                  )}
+                  {studioInfo.instagram && (
+                    <div className="flex items-center text-dark-300">
+                      <Instagram className="w-4 h-4 mr-3" style={{ color: studioInfo.cor_primaria }} />
+                      <span>{studioInfo.instagram}</span>
+                    </div>
+                  )}
+                  {studioInfo.facebook && (
+                    <div className="flex items-center text-dark-300">
+                      <Facebook className="w-4 h-4 mr-3" style={{ color: studioInfo.cor_primaria }} />
+                      <span>{studioInfo.facebook}</span>
+                    </div>
+                  )}
+                  {studioInfo.endereco && (
+                    <div className="flex items-center text-dark-300">
+                      <MapPin className="w-4 h-4 mr-3" style={{ color: studioInfo.cor_primaria }} />
+                      <span>{studioInfo.endereco}</span>
+                    </div>
+                  )}
                 </div>
               </Card>
             </div>

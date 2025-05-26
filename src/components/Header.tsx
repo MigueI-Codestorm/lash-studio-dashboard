@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import NotificationButton from './NotificationButton';
 
 const Header = () => {
   const { profile, signOut } = useAuth();
@@ -67,6 +68,8 @@ const Header = () => {
             <DollarSign className="w-4 h-4 text-yellow-400" />
             <span className="text-sm text-dark-300">R$ 670 hoje</span>
           </div>
+
+          <NotificationButton />
 
           <Button
             onClick={signOut}

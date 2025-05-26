@@ -177,6 +177,48 @@ export type Database = {
         }
         Relationships: []
       }
+      studio_settings: {
+        Row: {
+          created_at: string | null
+          endereco: string | null
+          facebook: string | null
+          horas_funcionamento: Json | null
+          id: string
+          instagram: string | null
+          link_agendamento: string | null
+          nome: string
+          telefone: string | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          endereco?: string | null
+          facebook?: string | null
+          horas_funcionamento?: Json | null
+          id?: string
+          instagram?: string | null
+          link_agendamento?: string | null
+          nome: string
+          telefone?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          endereco?: string | null
+          facebook?: string | null
+          horas_funcionamento?: Json | null
+          id?: string
+          instagram?: string | null
+          link_agendamento?: string | null
+          nome?: string
+          telefone?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           appointment_id: string | null

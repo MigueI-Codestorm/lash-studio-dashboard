@@ -1,204 +1,181 @@
 
-import { useState } from 'react';
-import { Calendar, Clock, Plus, User } from 'lucide-react';
-import Card from '../components/Card';
-import Modal from '../components/Modal';
-import { agendamentos } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import AppointmentModal from '@/components/AppointmentModal';
 
 const Agenda = () => {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
 
-  const agendamentosDoDia = agendamentos.filter(a => a.data === selectedDate);
+  useEffect(() => {
+    fetchAppointments();
+  }, [selectedDate]);
 
-  const proximosDias = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    return {
-      date: date.toISOString().split('T')[0],
-      day: date.getDate(),
-      weekday: date.toLocaleDateString('pt-BR', { weekday: 'short' }),
-      isToday: i === 0,
-      agendamentos: agendamentos.filter(a => a.data === date.toISOString().split('T')[0]).length
-    };
-  });
+  const fetchAppointments = async () => {
+    try {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          client:clients(nome, telefone),
+          service:services(nome, duracao_min)
+        `)
+        .eq('data', dateStr)
+        .order('hora');
+
+      if (error) throw error;
+      setAppointments(data || []);
+    } catch (error: any) {
+      console.error('Error fetching appointments:', error);
+      toast.error('Erro ao carregar agendamentos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Agendamento excluído com sucesso!');
+      fetchAppointments();
+    } catch (error: any) {
+      console.error('Error deleting appointment:', error);
+      toast.error('Erro ao excluir agendamento: ' + error.message);
+    }
+  };
+
+  const handleEdit = (appointment: any) => {
+    setEditingAppointment(appointment);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAppointment(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Confirmado': return 'bg-emerald-500';
-      case 'Pendente': return 'bg-yellow-500';
-      case 'Cancelado': return 'bg-red-500';
-      case 'Realizado': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case 'Confirmado': return 'bg-green-900 text-green-300';
+      case 'Concluído': return 'bg-blue-900 text-blue-300';
+      case 'Cancelado': return 'bg-red-900 text-red-300';
+      default: return 'bg-yellow-900 text-yellow-300';
     }
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Agenda</h1>
-          <p className="text-dark-400">Gerencie seus agendamentos</p>
-        </div>
-        <button
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-white">Agenda</h1>
+        <Button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          className="bg-primary-600 hover:bg-primary-700"
         >
-          <Plus className="w-4 h-4" />
-          <span>Novo Agendamento</span>
-        </button>
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Agendamento
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <Card>
-            <h3 className="text-xl font-semibold text-white mb-6">Próximos 7 Dias</h3>
-            <div className="space-y-3">
-              {proximosDias.map((dia) => (
-                <button
-                  key={dia.date}
-                  onClick={() => setSelectedDate(dia.date)}
-                  className={`
-                    w-full text-left p-4 rounded-lg transition-colors
-                    ${selectedDate === dia.date 
-                      ? 'bg-primary-600 text-white' 
-                      : 'bg-dark-700 hover:bg-dark-600 text-dark-200'
-                    }
-                  `}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{dia.weekday}</p>
-                      <p className="text-sm opacity-80">{dia.day}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm">{dia.agendamentos} agendamentos</p>
-                      {dia.isToday && (
-                        <span className="text-xs bg-emerald-500 text-white px-2 py-1 rounded">
-                          Hoje
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </Card>
+          <div className="bg-dark-800 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold text-white mb-4">Selecionar Data</h3>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => date && setSelectedDate(date)}
+              className="rounded-md border border-dark-700"
+            />
+          </div>
         </div>
 
         <div className="lg:col-span-2">
-          <Card>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">
-                {new Date(selectedDate).toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+          <div className="bg-dark-800 rounded-lg">
+            <div className="p-4 border-b border-dark-700">
+              <h3 className="text-lg font-semibold text-white">
+                Agendamentos para {selectedDate.toLocaleDateString('pt-BR')}
               </h3>
-              <span className="text-dark-400">{agendamentosDoDia.length} agendamentos</span>
             </div>
 
-            <div className="space-y-4">
-              {agendamentosDoDia.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="w-12 h-12 text-dark-500 mx-auto mb-4" />
-                  <p className="text-dark-400">Nenhum agendamento para este dia</p>
-                </div>
-              ) : (
-                agendamentosDoDia.map((agendamento) => (
-                  <div key={agendamento.id} className="bg-dark-700 rounded-lg p-4 border-l-4 border-primary-500">
-                    <div className="flex items-start justify-between">
+            {loading ? (
+              <div className="p-6 text-center text-dark-300">Carregando...</div>
+            ) : appointments.length === 0 ? (
+              <div className="p-6 text-center text-dark-300">
+                Nenhum agendamento para esta data
+              </div>
+            ) : (
+              <div className="divide-y divide-dark-700">
+                {appointments.map((appointment) => (
+                  <div key={appointment.id} className="p-4 hover:bg-dark-700">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Clock className="w-4 h-4 text-primary-400" />
-                          <span className="font-medium text-white">{agendamento.hora}</span>
-                          <span className={`px-2 py-1 rounded-full text-xs text-white ${getStatusColor(agendamento.status)}`}>
-                            {agendamento.status}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-white font-medium">
+                            {appointment.hora}
+                          </span>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(appointment.status)}`}>
+                            {appointment.status}
                           </span>
                         </div>
-                        
-                        <div className="flex items-center space-x-3 mb-2">
-                          <User className="w-4 h-4 text-dark-400" />
-                          <span className="text-white">{agendamento.clienteNome}</span>
+                        <div className="text-dark-300">
+                          <p><strong>Cliente:</strong> {appointment.client?.nome}</p>
+                          <p><strong>Telefone:</strong> {appointment.client?.telefone}</p>
+                          <p><strong>Serviço:</strong> {appointment.service?.nome}</p>
+                          <p><strong>Duração:</strong> {appointment.service?.duracao_min} min</p>
+                          <p><strong>Valor:</strong> R$ {appointment.valor}</p>
+                          {appointment.observacoes && (
+                            <p><strong>Observações:</strong> {appointment.observacoes}</p>
+                          )}
                         </div>
-                        
-                        <p className="text-dark-300 text-sm">{agendamento.servicoNome}</p>
                       </div>
-                      
-                      <div className="text-right">
-                        <p className="text-emerald-400 font-semibold">R$ {agendamento.valor}</p>
+                      <div className="flex space-x-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(appointment)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(appointment.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <Modal
+      <AppointmentModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Novo Agendamento"
-      >
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">Cliente</label>
-            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white">
-              <option>Selecione um cliente</option>
-              <option>Ana Carolina Silva</option>
-              <option>Beatriz Santos</option>
-              <option>Camila Rodrigues</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">Serviço</label>
-            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white">
-              <option>Selecione um serviço</option>
-              <option>Extensão de Cílios</option>
-              <option>Lash Lifting</option>
-              <option>Tintura de Cílios</option>
-            </select>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Data</label>
-              <input 
-                type="date" 
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Horário</label>
-              <input 
-                type="time" 
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white"
-              />
-            </div>
-          </div>
-          
-          <div className="flex space-x-4 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg transition-colors"
-            >
-              Agendar
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onClose={handleCloseModal}
+        onAppointmentSaved={fetchAppointments}
+        editingAppointment={editingAppointment}
+      />
     </div>
   );
 };

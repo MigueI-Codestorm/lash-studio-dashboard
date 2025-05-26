@@ -1,178 +1,183 @@
 
-import { useState } from 'react';
-import { Plus, Clock, DollarSign, Edit } from 'lucide-react';
-import Card from '../components/Card';
-import Modal from '../components/Modal';
-import { servicos } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import ServiceModal from '@/components/ServiceModal';
 
 const Servicos = () => {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingService, setEditingService] = useState<any>(null);
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('nome');
+
+      if (error) throw error;
+      setServices(data || []);
+    } catch (error: any) {
+      console.error('Error fetching services:', error);
+      toast.error('Erro ao carregar serviços');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este serviço?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Serviço excluído com sucesso!');
+      fetchServices();
+    } catch (error: any) {
+      console.error('Error deleting service:', error);
+      toast.error('Erro ao excluir serviço: ' + error.message);
+    }
+  };
+
+  const filteredServices = services.filter(service =>
+    service.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (service.categoria && service.categoria.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handleEdit = (service: any) => {
+    setEditingService(service);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingService(null);
+  };
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Serviços</h1>
-          <p className="text-dark-400">Gerencie seus serviços e preços</p>
-        </div>
-        <button
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-white">Serviços</h1>
+        <Button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          className="bg-primary-600 hover:bg-primary-700"
         >
-          <Plus className="w-4 h-4" />
-          <span>Novo Serviço</span>
-        </button>
+          <Plus className="w-4 h-4 mr-2" />
+          Criar Serviço
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {servicos.map((servico) => (
-          <Card key={servico.id} className="relative group hover:scale-105 transition-transform duration-200">
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button className="text-dark-400 hover:text-white transition-colors">
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <div className={`w-12 h-12 ${servico.cor} rounded-lg flex items-center justify-center mb-4`}>
-                <span className="text-white text-xl">💄</span>
-              </div>
-              
-              <h3 className="text-xl font-semibold text-white mb-2">{servico.nome}</h3>
-              <span className="inline-block bg-dark-700 text-dark-300 px-2 py-1 rounded text-sm">
-                {servico.categoria}
-              </span>
-            </div>
-
-            <p className="text-dark-300 text-sm mb-6 line-clamp-3">
-              {servico.descricao}
-            </p>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <DollarSign className="w-4 h-4 text-emerald-400" />
-                  <span className="text-dark-300 text-sm">Preço</span>
-                </div>
-                <span className="text-emerald-400 font-bold">R$ {servico.valor}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span className="text-dark-300 text-sm">Duração</span>
-                </div>
-                <span className="text-blue-400 font-medium">{servico.duracao}min</span>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-dark-700">
-              <div className="flex space-x-2">
-                <button className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg transition-colors text-sm">
-                  Agendar
-                </button>
-                <button className="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg transition-colors text-sm">
-                  Editar
-                </button>
-              </div>
-            </div>
-          </Card>
-        ))}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400 w-4 h-4" />
+          <Input
+            placeholder="Buscar serviços..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-dark-800 border-dark-700 text-white"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-white">{servicos.length}</p>
-            <p className="text-dark-400 text-sm">Serviços Disponíveis</p>
+      {loading ? (
+        <div className="text-center text-dark-300">Carregando...</div>
+      ) : (
+        <div className="bg-dark-800 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-dark-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Nome
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Categoria
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Preço
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Duração
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-dark-300 uppercase tracking-wider">
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-dark-700">
+                {filteredServices.map((service) => (
+                  <tr key={service.id} className="hover:bg-dark-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-white">
+                      {service.nome}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-dark-300">
+                      {service.categoria || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-dark-300">
+                      R$ {service.preco}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-dark-300">
+                      {service.duracao_min} min
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        service.ativo 
+                          ? 'bg-green-900 text-green-300' 
+                          : 'bg-red-900 text-red-300'
+                      }`}>
+                        {service.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(service)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(service.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </Card>
-        
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-emerald-400">R$ {Math.max(...servicos.map(s => s.valor))}</p>
-            <p className="text-dark-400 text-sm">Serviço Mais Caro</p>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="text-center">
-            <p className="text-2xl font-bold text-blue-400">{Math.round(servicos.reduce((acc, s) => acc + s.duracao, 0) / servicos.length)}min</p>
-            <p className="text-dark-400 text-sm">Duração Média</p>
-          </div>
-        </Card>
-      </div>
+        </div>
+      )}
 
-      <Modal
+      <ServiceModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Novo Serviço"
-      >
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">Nome do Serviço</label>
-            <input
-              type="text"
-              placeholder="Ex: Extensão de Cílios Premium"
-              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">Categoria</label>
-            <select className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option>Alongamento</option>
-              <option>Curvatura</option>
-              <option>Coloração</option>
-              <option>Manutenção</option>
-            </select>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Preço (R$)</label>
-              <input
-                type="number"
-                placeholder="150"
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-dark-300 mb-2">Duração (min)</label>
-              <input
-                type="number"
-                placeholder="120"
-                className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-dark-300 mb-2">Descrição</label>
-            <textarea
-              placeholder="Descrição detalhada do serviço..."
-              rows={3}
-              className="w-full bg-dark-700 border border-dark-600 rounded-lg px-3 py-2 text-white placeholder-dark-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-          
-          <div className="flex space-x-4 pt-4">
-            <button
-              type="submit"
-              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white py-2 rounded-lg transition-colors"
-            >
-              Salvar Serviço
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1 bg-dark-700 hover:bg-dark-600 text-white py-2 rounded-lg transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </Modal>
+        onClose={handleCloseModal}
+        onServiceSaved={fetchServices}
+        editingService={editingService}
+      />
     </div>
   );
 };

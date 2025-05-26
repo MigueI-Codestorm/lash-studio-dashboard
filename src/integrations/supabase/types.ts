@@ -269,10 +269,38 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_categories: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          tipo: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           appointment_id: string | null
           categoria: string
+          category_id: string | null
           created_at: string | null
           created_by: string
           data: string
@@ -284,6 +312,7 @@ export type Database = {
         Insert: {
           appointment_id?: string | null
           categoria: string
+          category_id?: string | null
           created_at?: string | null
           created_by: string
           data: string
@@ -295,6 +324,7 @@ export type Database = {
         Update: {
           appointment_id?: string | null
           categoria?: string
+          category_id?: string | null
           created_at?: string | null
           created_by?: string
           data?: string
@@ -309,6 +339,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "transaction_categories"
             referencedColumns: ["id"]
           },
           {
@@ -341,6 +378,10 @@ export type Database = {
           nome: string
           telefone: string
         }[]
+      }
+      get_studio_name: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_studio_status: {
         Args: Record<PropertyKey, never>

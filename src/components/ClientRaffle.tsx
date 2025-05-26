@@ -21,7 +21,10 @@ const ClientRaffle = () => {
     try {
       const { data, error } = await supabase.rpc('get_random_client');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error calling get_random_client:', error);
+        throw error;
+      }
       
       if (data && data.length > 0) {
         setSelectedClient(data[0]);

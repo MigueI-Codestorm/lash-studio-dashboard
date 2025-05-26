@@ -33,23 +33,46 @@ const Dashboard = () => {
   });
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [studioName, setStudioName] = useState('Studio Camila Lash');
 
   useEffect(() => {
     fetchDashboardData();
+    fetchStudioName();
   }, []);
+
+  const fetchStudioName = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_studio_name');
+      
+      if (error) {
+        console.error('Error fetching studio name:', error);
+        return;
+      }
+      
+      if (data) {
+        setStudioName(data);
+      }
+    } catch (error) {
+      console.error('Error fetching studio name:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
       // Buscar estatísticas do dashboard
       const { data: statsData, error: statsError } = await supabase.rpc('get_dashboard_stats');
       
-      if (statsError) throw statsError;
+      if (statsError) {
+        console.error('Error fetching dashboard stats:', statsError);
+        throw statsError;
+      }
       
       if (statsData && statsData.length > 0) {
         setStats(statsData[0]);
       }
 
       // Buscar próximos agendamentos
+      const today = new Date().toISOString().split('T')[0];
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select(`
@@ -57,17 +80,30 @@ const Dashboard = () => {
           data,
           hora,
           valor,
-          client:clients(nome),
-          service:services(nome)
+          clients!inner(nome),
+          services!inner(nome)
         `)
-        .gte('data', new Date().toISOString().split('T')[0])
+        .gte('data', today)
         .order('data', { ascending: true })
         .order('hora', { ascending: true })
         .limit(5);
 
-      if (appointmentsError) throw appointmentsError;
+      if (appointmentsError) {
+        console.error('Error fetching appointments:', appointmentsError);
+        throw appointmentsError;
+      }
       
-      setAppointments(appointmentsData || []);
+      // Transformar os dados para o formato esperado
+      const formattedAppointments = appointmentsData?.map(apt => ({
+        id: apt.id,
+        data: apt.data,
+        hora: apt.hora,
+        valor: apt.valor,
+        client: { nome: apt.clients.nome },
+        service: { nome: apt.services.nome }
+      })) || [];
+      
+      setAppointments(formattedAppointments);
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Erro ao carregar dados do dashboard');
@@ -87,6 +123,18 @@ const Dashboard = () => {
     { dia: 'Dom', agendamentos: 8 }
   ];
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00-03:00');
+    return date.toLocaleDateString('pt-BR');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -98,7 +146,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Dashboard - {studioName}</h1>
         <p className="text-dark-400">Visão geral do seu negócio</p>
       </div>
 
@@ -113,7 +161,7 @@ const Dashboard = () => {
         
         <StatsCard
           title="Receita Hoje"
-          value={`R$ ${stats.revenue_today}`}
+          value={formatCurrency(stats.revenue_today)}
           icon={<DollarSign className="w-6 h-6 text-white" />}
           color="bg-emerald-600"
           trend={{ value: "Concluídos", isPositive: true }}
@@ -176,7 +224,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-primary-400">
-                      {new Date(appointment.data).toLocaleDateString('pt-BR')}
+                      {formatDate(appointment.data)}
                     </p>
                     <p className="text-sm text-dark-400">{appointment.hora}</p>
                   </div>
@@ -190,7 +238,7 @@ const Dashboard = () => {
           <Card>
             <h3 className="text-lg font-semibold text-white mb-4">Receita Mensal</h3>
             <div className="text-center">
-              <p className="text-3xl font-bold text-emerald-400">R$ {stats.revenue_today * 30}</p>
+              <p className="text-3xl font-bold text-emerald-400">{formatCurrency(stats.revenue_today * 30)}</p>
               <p className="text-dark-400 text-sm mt-2">Estimativa baseada em hoje</p>
               <div className="w-full bg-dark-700 rounded-full h-2 mt-4">
                 <div className="bg-emerald-400 h-2 rounded-full" style={{ width: '65%' }}></div>

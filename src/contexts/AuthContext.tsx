@@ -51,7 +51,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      setProfile(data);
+      // Type assertion to ensure tipo_usuario is correctly typed
+      const typedProfile: Profile = {
+        ...data,
+        tipo_usuario: data.tipo_usuario as 'admin' | 'cliente'
+      };
+
+      setProfile(typedProfile);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }

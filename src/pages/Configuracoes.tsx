@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Save, Link, Phone, Instagram, Facebook, WhatsApp } from 'lucide-react';
+import { Save, Link, Phone, Instagram, Facebook } from 'lucide-react';
 import Card from '../components/Card';
 
 const Configuracoes = () => {
@@ -80,7 +79,10 @@ const Configuracoes = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">WhatsApp</label>
+                <label className="block text-sm font-medium text-dark-300 mb-2">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  WhatsApp
+                </label>
                 <input
                   type="text"
                   value={studioData.whatsapp}

@@ -61,6 +61,29 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
     }
   }, [isOpen]);
 
+  const isValidBusinessHours = (data: any): data is BusinessHours => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return false;
+    }
+
+    const requiredDays = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    
+    for (const day of requiredDays) {
+      const dayData = data[day];
+      if (!dayData || typeof dayData !== 'object') {
+        return false;
+      }
+      
+      if (typeof dayData.ativo !== 'boolean' || 
+          typeof dayData.abertura !== 'string' || 
+          typeof dayData.fechamento !== 'string') {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
   const fetchStudioSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -85,8 +108,8 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
           link_agendamento: settings.link_agendamento || ''
         });
 
-        if (settings.horas_funcionamento && typeof settings.horas_funcionamento === 'object') {
-          setBusinessHours(settings.horas_funcionamento as BusinessHours);
+        if (settings.horas_funcionamento && isValidBusinessHours(settings.horas_funcionamento)) {
+          setBusinessHours(settings.horas_funcionamento);
         }
       }
     } catch (error: any) {

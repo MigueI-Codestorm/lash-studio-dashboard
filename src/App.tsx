@@ -15,6 +15,7 @@ import Financeiro from "./pages/Financeiro";
 import Configuracoes from "./pages/Configuracoes";
 import Auth from "./pages/Auth";
 import ClienteDashboard from "./pages/ClienteDashboard";
+import PublicBooking from "./pages/PublicBooking";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -29,6 +30,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/agendamento" element={<PublicBooking />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route
               path="/cliente-dashboard"

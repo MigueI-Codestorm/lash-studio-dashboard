@@ -144,6 +144,56 @@ export type Database = {
         }
         Relationships: []
       }
+      public_bookings: {
+        Row: {
+          created_at: string | null
+          data: string
+          email: string | null
+          hora: string
+          id: string
+          nome: string
+          observacoes: string | null
+          service_id: string
+          status: string | null
+          telefone: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          email?: string | null
+          hora: string
+          id?: string
+          nome: string
+          observacoes?: string | null
+          service_id: string
+          status?: string | null
+          telefone: string
+          valor: number
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          email?: string | null
+          hora?: string
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          service_id?: string
+          status?: string | null
+          telefone?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           ativo: boolean | null
@@ -275,6 +325,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          appointments_today: number
+          revenue_today: number
+          total_clients: number
+          services_completed: number
+        }[]
+      }
+      get_random_client: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          nome: string
+          telefone: string
+        }[]
+      }
       get_studio_status: {
         Args: Record<PropertyKey, never>
         Returns: {

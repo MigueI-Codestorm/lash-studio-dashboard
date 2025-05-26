@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,9 @@ interface Transaction {
   valor: number;
   data: string;
   created_at: string;
+  category_id?: string;
+  appointment_id?: string;
+  created_by: string;
 }
 
 const Financeiro = () => {
@@ -43,8 +45,14 @@ const Financeiro = () => {
 
       if (error) throw error;
 
-      setTransactions(data || []);
-      calculateStats(data || []);
+      // Type assertion to ensure proper typing
+      const typedTransactions: Transaction[] = (data || []).map(transaction => ({
+        ...transaction,
+        tipo: transaction.tipo as 'entrada' | 'saida'
+      }));
+
+      setTransactions(typedTransactions);
+      calculateStats(typedTransactions);
     } catch (error: any) {
       console.error('Error fetching transactions:', error);
       toast.error('Erro ao carregar transações');

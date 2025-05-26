@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +12,9 @@ interface TransactionCategory {
   id: string;
   nome: string;
   tipo: 'entrada' | 'saida';
+  ativo: boolean;
+  created_at: string;
+  descricao: string;
 }
 
 interface TransactionModalProps {
@@ -73,7 +75,14 @@ const TransactionModal = ({ isOpen, onClose, onSuccess, transaction }: Transacti
         .order('nome');
 
       if (error) throw error;
-      setCategories(data || []);
+      
+      // Type assertion to ensure proper typing
+      const typedCategories: TransactionCategory[] = (data || []).map(cat => ({
+        ...cat,
+        tipo: cat.tipo as 'entrada' | 'saida'
+      }));
+      
+      setCategories(typedCategories);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Erro ao carregar categorias');

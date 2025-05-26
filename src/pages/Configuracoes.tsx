@@ -14,6 +14,11 @@ const Configuracoes = () => {
     console.log('Export functionality will be implemented here');
   };
 
+  const handleSettingsUpdated = () => {
+    // Handle settings update if needed
+    console.log('Settings updated');
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-white mb-6">Configurações</h1>
@@ -66,6 +71,7 @@ const Configuracoes = () => {
       <StudioSettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
+        onSettingsUpdated={handleSettingsUpdated}
       />
 
       <BusinessHoursModal

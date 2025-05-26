@@ -14,14 +14,21 @@ interface StudioSettingsModalProps {
   onSettingsUpdated: () => void;
 }
 
+interface DaySchedule {
+  ativo: boolean;
+  abertura: string;
+  fechamento: string;
+}
+
 interface BusinessHours {
-  segunda: { ativo: boolean; abertura: string; fechamento: string };
-  terca: { ativo: boolean; abertura: string; fechamento: string };
-  quarta: { ativo: boolean; abertura: string; fechamento: string };
-  quinta: { ativo: boolean; abertura: string; fechamento: string };
-  sexta: { ativo: boolean; abertura: string; fechamento: string };
-  sabado: { ativo: boolean; abertura: string; fechamento: string };
-  domingo: { ativo: boolean; abertura: string; fechamento: string };
+  [key: string]: DaySchedule;
+  segunda: DaySchedule;
+  terca: DaySchedule;
+  quarta: DaySchedule;
+  quinta: DaySchedule;
+  sexta: DaySchedule;
+  sabado: DaySchedule;
+  domingo: DaySchedule;
 }
 
 const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSettingsModalProps) => {
@@ -78,8 +85,8 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
           link_agendamento: settings.link_agendamento || ''
         });
 
-        if (settings.horas_funcionamento) {
-          setBusinessHours(settings.horas_funcionamento);
+        if (settings.horas_funcionamento && typeof settings.horas_funcionamento === 'object') {
+          setBusinessHours(settings.horas_funcionamento as BusinessHours);
         }
       }
     } catch (error: any) {
@@ -101,7 +108,7 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
         facebook: formData.facebook || null,
         endereco: formData.endereco || null,
         link_agendamento: formData.link_agendamento || null,
-        horas_funcionamento: businessHours
+        horas_funcionamento: businessHours as any
       };
 
       if (existingSettingsId) {

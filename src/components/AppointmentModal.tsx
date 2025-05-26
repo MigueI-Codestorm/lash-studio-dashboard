@@ -24,6 +24,8 @@ interface Service {
   duracao_min: number;
 }
 
+type AppointmentStatus = 'Pendente' | 'Confirmado' | 'Concluído' | 'Cancelado';
+
 interface AppointmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,7 +41,7 @@ const AppointmentModal = ({ isOpen, onClose, onAppointmentSaved, editingAppointm
     data: new Date().toISOString().split('T')[0],
     hora: '',
     observacoes: '',
-    status: 'Pendente' as const
+    status: 'Pendente' as AppointmentStatus
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -239,7 +241,7 @@ const AppointmentModal = ({ isOpen, onClose, onAppointmentSaved, editingAppointm
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: 'Pendente' | 'Confirmado' | 'Concluído' | 'Cancelado') => 
+                onValueChange={(value: AppointmentStatus) => 
                   setFormData({ ...formData, status: value })}
               >
                 <SelectTrigger className="bg-dark-700 border-dark-600">

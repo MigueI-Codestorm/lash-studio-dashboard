@@ -61,7 +61,7 @@ const BusinessHoursModal = ({ isOpen, onClose }: BusinessHoursModalProps) => {
     try {
       const { data, error } = await supabase
         .from('studio_settings')
-        .select('horarios_funcionamento')
+        .select('horas_funcionamento')
         .limit(1)
         .single();
 
@@ -69,8 +69,8 @@ const BusinessHoursModal = ({ isOpen, onClose }: BusinessHoursModalProps) => {
         throw error;
       }
 
-      if (data?.horarios_funcionamento) {
-        setBusinessHours(data.horarios_funcionamento as BusinessHours);
+      if (data?.horas_funcionamento) {
+        setBusinessHours(data.horas_funcionamento as BusinessHours);
       }
     } catch (error: any) {
       console.error('Error fetching business hours:', error);
@@ -113,7 +113,7 @@ const BusinessHoursModal = ({ isOpen, onClose }: BusinessHoursModalProps) => {
         const { error } = await supabase
           .from('studio_settings')
           .update({
-            horarios_funcionamento: businessHours,
+            horas_funcionamento: businessHours,
             updated_at: new Date().toISOString()
           })
           .eq('id', existingSettings.id);
@@ -124,7 +124,7 @@ const BusinessHoursModal = ({ isOpen, onClose }: BusinessHoursModalProps) => {
           .from('studio_settings')
           .insert([{
             nome: 'Studio Camila Lash',
-            horarios_funcionamento: businessHours
+            horas_funcionamento: businessHours
           }]);
 
         if (error) throw error;

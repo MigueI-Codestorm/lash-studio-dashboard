@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, Phone, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import AppointmentModal from '@/components/AppointmentModal';
+import StudioStatusBadge from '@/components/StudioStatusBadge';
 
 const ClienteDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -93,6 +94,9 @@ const ClienteDashboard = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="grid gap-8">
+          {/* Studio Status */}
+          <StudioStatusBadge />
+
           {/* Quick Info Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-dark-800 p-6 rounded-lg border border-dark-700">

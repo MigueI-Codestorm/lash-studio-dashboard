@@ -275,7 +275,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_studio_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          is_open: boolean
+          current_day: string
+          opening_time: string
+          closing_time: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

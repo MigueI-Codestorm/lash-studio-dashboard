@@ -1,7 +1,11 @@
 
-import { Calendar, Users, DollarSign } from 'lucide-react';
+import { Calendar, Users, DollarSign, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const Header = () => {
+  const { profile, signOut } = useAuth();
+  
   const hoje = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     year: 'numeric',
@@ -15,6 +19,9 @@ const Header = () => {
         <div>
           <h2 className="text-2xl font-bold text-white">Studio Camila Lash</h2>
           <p className="text-dark-400 text-sm mt-1 capitalize">{hoje}</p>
+          {profile && (
+            <p className="text-primary-400 text-sm">Olá, {profile.nome}! ({profile.tipo_usuario})</p>
+          )}
         </div>
         
         <div className="flex items-center space-x-4 mt-4 lg:mt-0">
@@ -32,6 +39,16 @@ const Header = () => {
             <DollarSign className="w-4 h-4 text-yellow-400" />
             <span className="text-sm text-dark-300">R$ 670 hoje</span>
           </div>
+
+          <Button
+            onClick={signOut}
+            variant="outline"
+            size="sm"
+            className="border-dark-600 text-dark-300 hover:bg-dark-700"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
         </div>
       </div>
     </header>

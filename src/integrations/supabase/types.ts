@@ -9,7 +9,225 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          client_id: string
+          created_at: string | null
+          created_by: string
+          data: string
+          hora: string
+          id: string
+          observacoes: string | null
+          service_id: string
+          status: string
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string | null
+          created_by: string
+          data: string
+          hora: string
+          id?: string
+          observacoes?: string | null
+          service_id: string
+          status?: string
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string | null
+          created_by?: string
+          data?: string
+          hora?: string
+          id?: string
+          observacoes?: string | null
+          service_id?: string
+          status?: string
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          created_at: string | null
+          criado_por: string
+          data_nascimento: string | null
+          email: string | null
+          id: string
+          nome: string
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por: string
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          nome: string
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          nome?: string
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          nome: string
+          telefone: string | null
+          tipo_usuario: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          nome: string
+          telefone?: string | null
+          tipo_usuario: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          telefone?: string | null
+          tipo_usuario?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          created_at: string | null
+          descricao: string | null
+          duracao_min: number
+          id: string
+          nome: string
+          preco: number
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_min: number
+          id?: string
+          nome: string
+          preco: number
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_min?: number
+          id?: string
+          nome?: string
+          preco?: number
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          appointment_id: string | null
+          categoria: string
+          created_at: string | null
+          created_by: string
+          data: string
+          descricao: string
+          id: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          appointment_id?: string | null
+          categoria: string
+          created_at?: string | null
+          created_by: string
+          data: string
+          descricao: string
+          id?: string
+          tipo: string
+          valor: number
+        }
+        Update: {
+          appointment_id?: string | null
+          categoria?: string
+          created_at?: string | null
+          created_by?: string
+          data?: string
+          descricao?: string
+          id?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

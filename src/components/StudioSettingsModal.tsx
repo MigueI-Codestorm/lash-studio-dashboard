@@ -34,7 +34,7 @@ const StudioSettingsModal = ({ isOpen, onClose }: StudioSettingsModalProps) => {
     try {
       const { data, error } = await supabase
         .from('studio_settings')
-        .select('*')
+        .select('nome, endereco, telefone, whatsapp, instagram, facebook, link_agendamento')
         .limit(1)
         .single();
 

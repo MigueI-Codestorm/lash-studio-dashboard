@@ -1,11 +1,18 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings } from 'lucide-react';
+import { Settings, Clock, Download } from 'lucide-react';
 import StudioSettingsModal from '@/components/StudioSettingsModal';
+import BusinessHoursModal from '@/components/BusinessHoursModal';
 
 const Configuracoes = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isBusinessHoursModalOpen, setIsBusinessHoursModalOpen] = useState(false);
+
+  const handleExportData = () => {
+    // Placeholder for future export functionality
+    console.log('Export functionality will be implemented here');
+  };
 
   return (
     <div className="p-6">
@@ -32,11 +39,11 @@ const Configuracoes = () => {
             Configure os horários de funcionamento do seu studio para cada dia da semana.
           </p>
           <Button 
-            variant="outline"
-            disabled
-            className="border-dark-600 text-dark-400"
+            onClick={() => setIsBusinessHoursModalOpen(true)}
+            className="bg-primary-600 hover:bg-primary-700"
           >
-            Em breve
+            <Clock className="w-4 h-4 mr-2" />
+            Configurar Horários
           </Button>
         </div>
 
@@ -46,11 +53,12 @@ const Configuracoes = () => {
             Faça backup dos seus dados ou exporte relatórios em diferentes formatos.
           </p>
           <Button 
+            onClick={handleExportData}
             variant="outline"
-            disabled
-            className="border-dark-600 text-dark-400"
+            className="border-primary-600 text-primary-400 hover:bg-primary-600 hover:text-white"
           >
-            Em breve
+            <Download className="w-4 h-4 mr-2" />
+            Exportar Dados
           </Button>
         </div>
       </div>
@@ -58,6 +66,11 @@ const Configuracoes = () => {
       <StudioSettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
+      />
+
+      <BusinessHoursModal
+        isOpen={isBusinessHoursModalOpen}
+        onClose={() => setIsBusinessHoursModalOpen(false)}
       />
     </div>
   );

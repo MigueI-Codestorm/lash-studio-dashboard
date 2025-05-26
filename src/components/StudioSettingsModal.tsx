@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -153,6 +152,9 @@ const StudioSettingsModal = ({ isOpen, onClose, onSettingsUpdated }: StudioSetti
 
       onSettingsUpdated();
       onClose();
+      
+      // Trigger a page refresh to update the header with the new studio name
+      window.location.reload();
     } catch (error: any) {
       console.error('Error saving studio settings:', error);
       toast.error(error.message || 'Erro ao salvar configurações');

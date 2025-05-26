@@ -2,9 +2,12 @@
 import { Calendar, Users, DollarSign, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const { profile, signOut } = useAuth();
+  const [studioName, setStudioName] = useState('Studio Camila Lash');
   
   const hoje = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -13,11 +16,36 @@ const Header = () => {
     day: 'numeric'
   });
 
+  useEffect(() => {
+    fetchStudioName();
+  }, []);
+
+  const fetchStudioName = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('studio_settings')
+        .select('nome')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error fetching studio name:', error);
+        return;
+      }
+
+      if (data && data.length > 0 && data[0].nome) {
+        setStudioName(data[0].nome);
+      }
+    } catch (error) {
+      console.error('Error fetching studio name:', error);
+    }
+  };
+
   return (
     <header className="bg-dark-950 border-b border-dark-800 px-6 lg:px-8 py-4">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Studio Camila Lash</h2>
+          <h2 className="text-2xl font-bold text-white">{studioName}</h2>
           <p className="text-dark-400 text-sm mt-1 capitalize">{hoje}</p>
           {profile && (
             <p className="text-primary-400 text-sm">Olá, {profile.nome}! ({profile.tipo_usuario})</p>
